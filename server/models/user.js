@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
 const jwt = require("jsonwebtoken");
-const _ = require('lodash');
+const _ = require("lodash");
 
 var UserSchema = new mongoose.Schema({
   email: {
@@ -16,7 +16,7 @@ var UserSchema = new mongoose.Schema({
           resolve(validator.isEmail(v));
         });
       },
-      message: '{VALUE} is not a valid email address!'
+      message: "{VALUE} is not a valid email address!"
     }
   },
   password: {
@@ -38,15 +38,15 @@ var UserSchema = new mongoose.Schema({
   ]
 });
 
-UserSchema.methods.toJSON = function(){
-    var user = this;
-    var userObject = user.toObject();
+UserSchema.methods.toJSON = function() {
+  var user = this;
+  var userObject = user.toObject();
 
-    return _.pick(userObject, ['_id', 'email']);
+  return _.pick(userObject, ["_id", "email"]);
 };
 
 /**
- * 
+ *
  */
 UserSchema.methods.generateAuthToken = async function() {
   var user = this;
@@ -58,6 +58,23 @@ UserSchema.methods.generateAuthToken = async function() {
   user.tokens = user.tokens.concat([{ access, token }]);
   await user.save();
   return token;
+};
+
+UserSchema.statics.findByToken = function(token) {
+  var User = this;
+  var decoded;
+
+  try {
+    decoded = jwt.verify(token, "abc123");
+  } catch (e) {
+    return Promise.reject();
+  }
+  
+  return User.findOne({
+      '_id': decoded._id,
+      'tokens.token': token,
+      'tokens.access': 'auth'
+  });
 };
 
 var User = mongoose.model("User", UserSchema);
